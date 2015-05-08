@@ -81,7 +81,7 @@ meta:
   ips:
     web:
     - 10.244.9.2
-  name: concourse
+  name: concourse-production
   release_versions:
     concourse: 0.48.0
     garden-linux: 0.204.0
@@ -114,7 +114,7 @@ meta:
     range: 10.244.9.20/30
     reserved:
     - 10.244.9.21
-name: concourse
+name: concourse-production
 networks:
 - name: concourse
   subnets:
