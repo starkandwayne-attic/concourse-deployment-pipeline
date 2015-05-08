@@ -1,0 +1,7 @@
+---
+meta:
+  release_versions:
+    concourse: "0.48.0"
+    garden-linux: "0.204.0"
+  stemcell:
+    version: "2776"

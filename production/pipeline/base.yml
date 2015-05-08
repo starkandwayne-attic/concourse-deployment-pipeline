@@ -1,0 +1,109 @@
+---
+name: (( meta.name ))
+director_uuid: (( meta.director_uuid ))
+releases:
+- name: concourse
+  version: (( meta.release_versions.concourse ))
+- name: garden-linux
+  version: (( meta.release_versions.garden-linux ))
+jobs:
+- name: web
+  instances: 1
+  resource_pool: concourse
+  networks:
+  - name: concourse
+    static_ips: (( meta.ips.web ))
+  persistent_disk: 1024
+  templates:
+  - release: concourse
+    name: consul-agent
+  - release: concourse
+    name: atc
+  - release: concourse
+    name: tsa
+  properties:
+    atc:
+      development_mode: true
+      postgresql:
+        database: atc
+        role: &1
+          name: atc
+          password: dummy-postgres-password
+    consul:
+      agent:
+        mode: server
+- name: db
+  instances: 1
+  resource_pool: concourse
+  networks:
+  - name: concourse
+  persistent_disk: 10240
+  templates:
+  - release: concourse
+    name: consul-agent
+  - release: concourse
+    name: postgresql
+  properties:
+    postgresql:
+      databases:
+      - name: atc
+      roles:
+      - *1
+    consul:
+      agent:
+        servers:
+          lan: &2
+          - 10.244.9.2
+- name: worker
+  instances: 1
+  resource_pool: concourse
+  networks:
+  - name: concourse
+  templates:
+  - release: concourse
+    name: consul-agent
+  - release: garden-linux
+    name: garden
+  - release: concourse
+    name: groundcrew
+  properties:
+    garden:
+      disk_quota_enabled: false
+      listen_network: tcp
+      listen_address: 0.0.0.0:7777
+      allow_host_access: true
+    consul:
+      agent:
+        servers:
+          lan: *2
+networks:
+- name: concourse
+  subnets: (( meta.subnets ))
+resource_pools:
+- name: concourse
+  network: concourse
+  cloud_properties: {}
+  stemcell:
+    name: bosh-warden-boshlite-ubuntu-trusty-go_agent
+    version: (( meta.stemcell.version ))
+compilation:
+  workers: 3
+  network: concourse
+  cloud_properties: {}
+update:
+  canaries: 1
+  max_in_flight: 3
+  serial: false
+  canary_watch_time: 1000-60000
+  update_watch_time: 1000-60000
+meta:
+  name: (( merge ))
+  director_uuid: (( merge ))
+  release_versions:
+    concourse: (( merge ))
+    garden-linux: (( merge ))
+  stemcell:
+    version: (( merge ))
+  subnets: (( merge ))
+  ips:
+    web: (( merge ))

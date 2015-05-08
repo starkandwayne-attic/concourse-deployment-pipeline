@@ -1,0 +1,32 @@
+---
+meta:
+  subnets:
+  - range: 10.244.9.0/30
+    reserved:
+    - 10.244.9.1
+    static:
+    - 10.244.9.2
+    cloud_properties: {}
+  - range: 10.244.9.4/30
+    reserved:
+    - 10.244.9.5
+    cloud_properties: {}
+  - range: 10.244.9.8/30
+    reserved:
+    - 10.244.9.9
+    cloud_properties: {}
+  - range: 10.244.9.12/30
+    reserved:
+    - 10.244.9.13
+    cloud_properties: {}
+  - range: 10.244.9.16/30
+    reserved:
+    - 10.244.9.17
+    cloud_properties: {}
+  - range: 10.244.9.20/30
+    reserved:
+    - 10.244.9.21
+    cloud_properties: {}
+  ips:
+    web:
+    - 10.244.9.2

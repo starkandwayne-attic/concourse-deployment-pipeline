@@ -6,17 +6,17 @@ DIR=$(pwd)
 
 stage=$(basename $DIR)
 
-if [[ ! -f releases/logstash-docker/version ]]; then
-  echo "missing resource input ${stage}/releases/logstash-docker/version"
+if [[ ! -f releases/concourse/version ]]; then
+  echo "missing resource input ${stage}/releases/concourse/version"
   exit 1
 fi
-LOGSTASH_DOCKER_VERSION=$(cat releases/logstash-docker/version)
+CONCOURSE_VERSION=$(cat releases/concourse/version)
 
-if [[ ! -f releases/docker/version ]]; then
-  echo "missing resource input ${stage}/releases/docker/version"
+if [[ ! -f releases/garden-linux/version ]]; then
+  echo "missing resource input ${stage}/releases/garden-linux/version"
   exit 1
 fi
-DOCKER_VERSION=$(cat releases/docker/version)
+GARDEN_LINUX_VERSION=$(cat releases/garden-linux/version)
 
 if [[ ! -f stemcell/version ]]; then
   echo "missing resource input ${stage}/stemcell/version"
@@ -29,19 +29,15 @@ cat >manifests/pipeline-inputs.yml <<EOF
 ---
 meta:
   release_versions:
-    logstash_docker: "$LOGSTASH_DOCKER_VERSION"
-    docker: "$DOCKER_VERSION"
+    concourse: "$CONCOURSE_VERSION"
+    garden-linux: "$GARDEN_LINUX_VERSION"
   stemcell:
     version: "$STEMCELL_VERSION"
 EOF
 
 spiff merge \
-  pipeline/logstash-docker-boshrelease/deployment.yml \
-  pipeline/logstash-docker-boshrelease/jobs.yml \
-  pipeline/logstash-docker-boshrelease/run-container-image-embedded.yml \
-  pipeline/logstash-docker-boshrelease/infrastructure-warden.yml \
-  environment/networking.yml \
-  environment/scaling.yml \
+  pipeline/base.yml \
+  environment/networks.yml \
   environment/director.yml \
   environment/name.yml \
   manifests/pipeline-inputs.yml
