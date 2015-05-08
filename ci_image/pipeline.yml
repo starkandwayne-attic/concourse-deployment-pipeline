@@ -9,7 +9,7 @@ jobs:
     trigger: true
   - put: docker-image
     params:
-      build: pipeline/task_docker_image
+      build: pipeline/ci_image
 
 resources:
 - name: git-pipeline-docker-image
