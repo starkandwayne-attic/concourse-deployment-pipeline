@@ -19,8 +19,8 @@ jobs:
       inputs:
       - {name: pipeline, path: .}
       - {name: stemcell, path: production/stemcell}
-      - {name: release-concourse, path: production/releases/docker}
-      - {name: release-garden-linux, path: production/releases/concourse}
+      - {name: release-concourse, path: production/releases/concourse}
+      - {name: release-garden-linux, path: production/releases/garden-linux}
       run: {path: ./production/bin/create_stub_make_manifest_and_save.sh}
   - task: git-add
     config:
@@ -68,6 +68,7 @@ jobs:
       inputs:
       - {name: release-version}
       - {name: make-manifest, path: .}
+      - {name: release-concourse}
       - {name: release-garden-linux}
       - {name: stemcell}
       run: {path: ./production/bin/save_deployment_pipeline.sh}
