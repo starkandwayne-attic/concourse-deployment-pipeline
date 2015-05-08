@@ -22,7 +22,7 @@ jobs:
       - {name: pipeline, path: .}
       - {name: stemcell, path: try-anything/stemcell}
       - {name: release-concourse, path: try-anything/releases/docker}
-      - {name: release-garden-linux, path: try-anything/releases/logstash-docker}
+      - {name: release-garden-linux, path: try-anything/releases/concourse}
       run: {path: ./try-anything/bin/create_stub_make_manifest_and_save.sh}
   - task: git-add
     config:
@@ -121,7 +121,7 @@ jobs:
       inputs: []
       run:
         path: bosh
-        args: [-n, -t, {{bosh-target}}, -u, {{bosh-username}}, -p, {{bosh-password}}, delete, deployment, logstash-docker-pre-prod]
+        args: [-n, -t, {{bosh-target}}, -u, {{bosh-username}}, -p, {{bosh-password}}, delete, deployment, concourse-pre-prod]
   - put: deployment-pre-production
     params:
       manifest: make-manifest-from-prod/pre-production/manifests/manifest.yml
@@ -171,7 +171,7 @@ jobs:
       inputs: []
       run:
         path: bosh
-        args: [-n, -t, {{bosh-target}}, -u, {{bosh-username}}, -p, {{bosh-password}}, delete, deployment, logstash-docker-pre-prod]
+        args: [-n, -t, {{bosh-target}}, -u, {{bosh-username}}, -p, {{bosh-password}}, delete, deployment, concourse-pre-prod]
 
 - name: deploy-production
   public: true
@@ -238,7 +238,7 @@ resources:
 
 - name: release-garden-linux
   type: bosh-io-release
-  source: {repository: cloudfoundry-community/logstash-docker-boshrelease}
+  source: {repository: cloudfoundry-community/concourse-boshrelease}
 
 - name: git-pipeline
   type: git
@@ -285,7 +285,7 @@ resources:
     target: {{bosh-target}}
     username: {{bosh-username}}
     password: {{bosh-password}}
-    deployment: logstash-docker-try-anything
+    deployment: concourse-try-anything
     ignore_ssl: true
 
 - name: deployment-pre-production
@@ -294,7 +294,7 @@ resources:
     target: {{bosh-target}}
     username: {{bosh-username}}
     password: {{bosh-password}}
-    deployment: logstash-docker-pre-prod
+    deployment: concourse-pre-prod
     ignore_ssl: true
 
 - name: deployment-production
@@ -303,7 +303,7 @@ resources:
     target: {{bosh-target}}
     username: {{bosh-username}}
     password: {{bosh-password}}
-    deployment: logstash-docker-production
+    deployment: concourse-production
     ignore_ssl: true
 
 - name: release-version

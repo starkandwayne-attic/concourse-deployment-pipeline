@@ -14,14 +14,14 @@ fi
 release_version=$(cat release-version/number)
 
 mkdir -p pipeline-assets/releases/docker
-mkdir -p pipeline-assets/releases/logstash-docker
+mkdir -p pipeline-assets/releases/concourse
 mkdir -p pipeline-assets/stemcell
 
 cp release-concourse/* pipeline-assets/releases/docker/
 rm pipeline-assets/releases/docker/*.tgz
 
-cp release-garden-linux/* pipeline-assets/releases/logstash-docker/
-rm pipeline-assets/releases/logstash-docker/*.tgz
+cp release-garden-linux/* pipeline-assets/releases/concourse/
+rm pipeline-assets/releases/concourse/*.tgz
 
 cp stemcell/* pipeline-assets/stemcell/
 rm pipeline-assets/stemcell/*.tgz

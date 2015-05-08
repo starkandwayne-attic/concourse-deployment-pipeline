@@ -1,6 +1,6 @@
 ---
 jobs:
-- name: deploy-try-anything
+- name: deploy-production
   public: true
   serial: true
   plan:
@@ -9,8 +9,8 @@ jobs:
     - {get: release-concourse, trigger: true}
     - {get: release-garden-linux, trigger: true}
     - {get: pipeline, resource: git-pipeline, trigger: false}
-    - {get: try-anything-pipeline-changes, trigger: true}
-    - {get: try-anything-env-changes, trigger: true}
+    - {get: production-pipeline-changes, trigger: true}
+    - {get: production-env-changes, trigger: true}
     - {get: release-version, trigger: false, params: {bump: patch}}
   - task: make-manifest
     config:
@@ -18,10 +18,10 @@ jobs:
       image: {{docker-hub-task-image}}
       inputs:
       - {name: pipeline, path: .}
-      - {name: stemcell, path: try-anything/stemcell}
-      - {name: release-concourse, path: try-anything/releases/docker}
-      - {name: release-garden-linux, path: try-anything/releases/logstash-docker}
-      run: {path: ./try-anything/bin/create_stub_make_manifest_and_save.sh}
+      - {name: stemcell, path: production/stemcell}
+      - {name: release-concourse, path: production/releases/docker}
+      - {name: release-garden-linux, path: production/releases/concourse}
+      run: {path: ./production/bin/create_stub_make_manifest_and_save.sh}
   - task: git-add
     config:
       platform: linux
@@ -29,8 +29,8 @@ jobs:
       inputs:
       - {name: make-manifest}
       run:
-        path: ./make-manifest/try-anything/bin/git-add-stage-changes.sh
-        args: ["[try-anything] Update manifest"]
+        path: ./make-manifest/production/bin/git-add-stage-changes.sh
+        args: ["[production] Update manifest"]
   - put: git-pipeline
     params:
       repository: git-add/make-manifest
@@ -52,9 +52,9 @@ jobs:
       run:
         path: bosh
         args: [-n, -t, {{bosh-target}}, -u, {{bosh-username}}, -p, {{bosh-password}}, status]
-  - put: deployment-try-anything
+  - put: deployment-production
     params:
-      manifest: make-manifest/try-anything/manifests/manifest.yml
+      manifest: make-manifest/production/manifests/manifest.yml
       releases: [release-*/*.tgz]
       stemcells: [stemcell/*.tgz]
 
@@ -70,7 +70,7 @@ jobs:
       - {name: make-manifest, path: .}
       - {name: release-garden-linux}
       - {name: stemcell}
-      run: {path: ./try-anything/bin/save_deployment_pipeline.sh}
+      run: {path: ./production/bin/save_deployment_pipeline.sh}
 
   - put: s3-candidate-assets
     params: {from: save-deployment-pipeline/pipeline-assets-(.*).tgz}
@@ -84,11 +84,11 @@ resources:
 
 - name: release-concourse
   type: bosh-io-release
-  source: {repository: cf-platform-eng/docker-boshrelease}
+  source: {repository: concourse/concourse}
 
 - name: release-garden-linux
   type: bosh-io-release
-  source: {repository: cloudfoundry-community/logstash-docker-boshrelease}
+  source: {repository: cloudfoundry-incubator/garden-linux-release}
 
 - name: git-pipeline
   type: git
@@ -97,29 +97,29 @@ resources:
     branch: {{pipeline-branch}}
     private_key: {{github-private-key}}
 
-- name: try-anything-env-changes
+- name: production-env-changes
   type: git
   source:
     uri: {{pipeline-git-repo}}
     branch: {{pipeline-branch}}
     private_key: {{github-private-key}}
-    paths: [try-anything/environment]
+    paths: [production/environment]
 
-- name: try-anything-pipeline-changes
+- name: production-pipeline-changes
   type: git
   source:
     uri: {{pipeline-git-repo}}
     branch: {{pipeline-branch}}
     private_key: {{github-private-key}}
-    paths: [try-anything/pipeline]
+    paths: [production/pipeline]
 
-- name: deployment-try-anything
+- name: deployment-production
   type: bosh-deployment
   source:
     target: {{bosh-target}}
     username: {{bosh-username}}
     password: {{bosh-password}}
-    deployment: logstash-docker-try-anything
+    deployment: concourse-production
     ignore_ssl: true
 
 - name: release-version

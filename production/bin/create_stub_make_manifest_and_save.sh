@@ -9,11 +9,11 @@ cd $DIR/..
 mkdir -p manifests
 stage=$(basename $DIR)
 
-if [[ ! -f releases/logstash-docker/version ]]; then
-  echo "missing resource input ${stage}/releases/logstash-docker/version"
+if [[ ! -f releases/concourse/version ]]; then
+  echo "missing resource input ${stage}/releases/concourse/version"
   exit 1
 fi
-LOGSTASH_DOCKER_VERSION=$(cat releases/logstash-docker/version)
+LOGSTASH_DOCKER_VERSION=$(cat releases/concourse/version)
 
 if [[ ! -f releases/docker/version ]]; then
   echo "missing resource input ${stage}/releases/docker/version"
