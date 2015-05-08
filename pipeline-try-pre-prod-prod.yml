@@ -6,8 +6,8 @@ jobs:
   plan:
   - aggregate:
     - {get: stemcell, trigger: true}
-    - {get: release-docker, trigger: true}
-    - {get: release-logstash-docker, trigger: true}
+    - {get: release-concourse, trigger: true}
+    - {get: release-garden-linux, trigger: true}
     - {get: pipeline, resource: git-pipeline, trigger: false}
     - {get: try-anything-pipeline-changes, trigger: false}
     - {get: try-anything-env-changes, trigger: false}
@@ -21,8 +21,8 @@ jobs:
       inputs:
       - {name: pipeline, path: .}
       - {name: stemcell, path: try-anything/stemcell}
-      - {name: release-docker, path: try-anything/releases/docker}
-      - {name: release-logstash-docker, path: try-anything/releases/logstash-docker}
+      - {name: release-concourse, path: try-anything/releases/docker}
+      - {name: release-garden-linux, path: try-anything/releases/logstash-docker}
       run: {path: ./try-anything/bin/create_stub_make_manifest_and_save.sh}
   - task: git-add
     config:
@@ -54,8 +54,8 @@ jobs:
       inputs:
       - {name: release-version}
       - {name: make-manifest, path: .}
-      - {name: release-docker}
-      - {name: release-logstash-docker}
+      - {name: release-concourse}
+      - {name: release-garden-linux}
       - {name: stemcell}
       run: {path: ./try-anything/bin/save_deployment_pipeline.sh}
 
@@ -232,11 +232,11 @@ resources:
     name: {{bosh-stemcell-name}}
     version: {{bosh-stemcell-version}}
 
-- name: release-docker
+- name: release-concourse
   type: bosh-io-release
   source: {repository: cf-platform-eng/docker-boshrelease}
 
-- name: release-logstash-docker
+- name: release-garden-linux
   type: bosh-io-release
   source: {repository: cloudfoundry-community/logstash-docker-boshrelease}
 

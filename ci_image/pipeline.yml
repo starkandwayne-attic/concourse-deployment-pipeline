@@ -18,7 +18,7 @@ resources:
     uri: {{pipeline-git-repo}}
     branch: master
     private_key: {{github-private-key}}
-    paths: [task_docker_image/*]
+    paths: [ci_image/*]
 
 - name: docker-image
   type: docker-image

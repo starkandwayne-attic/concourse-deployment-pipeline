@@ -35,7 +35,11 @@ fi
 pushd $DIR
   yes y | fly -t ${fly_target} configure -c ${pipeline} --vars-from ${credentials} ${pipeline_name}
   if [[ "${trigger_job}X" != "X" ]]; then
-    curl $ATC_URL/jobs/${trigger_job}/builds -X POST
-    fly -t ${fly_target} watch -j ${trigger_job}
+    if [[ "${ATC_URL}X" == "X" ]]; then
+      echo "Set $ATC_URL to be able to trigger jobs"
+    else
+      curl $ATC_URL/jobs/${trigger_job}/builds -X POST
+      fly -t ${fly_target} watch -j ${trigger_job}
+    fi
   fi
 popd
