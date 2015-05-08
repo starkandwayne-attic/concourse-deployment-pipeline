@@ -1,0 +1,165 @@
+compilation:
+  cloud_properties: {}
+  network: concourse
+  workers: 3
+director_uuid: 9c7ca635-f6e5-43c3-a795-87ad19388cb9
+jobs:
+- instances: 1
+  name: web
+  networks:
+  - name: concourse
+    static_ips:
+    - 10.244.9.2
+  persistent_disk: 1024
+  properties:
+    atc:
+      development_mode: true
+      postgresql:
+        database: atc
+        role:
+          name: atc
+          password: dummy-postgres-password
+    consul:
+      agent:
+        mode: server
+  resource_pool: concourse
+  templates:
+  - name: consul-agent
+    release: concourse
+  - name: atc
+    release: concourse
+  - name: tsa
+    release: concourse
+- instances: 1
+  name: db
+  networks:
+  - name: concourse
+  persistent_disk: 10240
+  properties:
+    consul:
+      agent:
+        servers:
+          lan:
+          - 10.244.9.2
+    postgresql:
+      databases:
+      - name: atc
+      roles:
+      - name: atc
+        password: dummy-postgres-password
+  resource_pool: concourse
+  templates:
+  - name: consul-agent
+    release: concourse
+  - name: postgresql
+    release: concourse
+- instances: 1
+  name: worker
+  networks:
+  - name: concourse
+  properties:
+    consul:
+      agent:
+        servers:
+          lan:
+          - 10.244.9.2
+    garden:
+      allow_host_access: true
+      disk_quota_enabled: false
+      listen_address: 0.0.0.0:7777
+      listen_network: tcp
+  resource_pool: concourse
+  templates:
+  - name: consul-agent
+    release: concourse
+  - name: garden
+    release: garden-linux
+  - name: groundcrew
+    release: concourse
+meta:
+  director_uuid: 9c7ca635-f6e5-43c3-a795-87ad19388cb9
+  ips:
+    web:
+    - 10.244.9.2
+  name: concourse
+  release_versions:
+    concourse: 0.48.0
+    garden-linux: 0.204.0
+  stemcell:
+    version: "2776"
+  subnets:
+  - cloud_properties: {}
+    range: 10.244.9.0/30
+    reserved:
+    - 10.244.9.1
+    static:
+    - 10.244.9.2
+  - cloud_properties: {}
+    range: 10.244.9.4/30
+    reserved:
+    - 10.244.9.5
+  - cloud_properties: {}
+    range: 10.244.9.8/30
+    reserved:
+    - 10.244.9.9
+  - cloud_properties: {}
+    range: 10.244.9.12/30
+    reserved:
+    - 10.244.9.13
+  - cloud_properties: {}
+    range: 10.244.9.16/30
+    reserved:
+    - 10.244.9.17
+  - cloud_properties: {}
+    range: 10.244.9.20/30
+    reserved:
+    - 10.244.9.21
+name: concourse
+networks:
+- name: concourse
+  subnets:
+  - cloud_properties: {}
+    range: 10.244.9.0/30
+    reserved:
+    - 10.244.9.1
+    static:
+    - 10.244.9.2
+  - cloud_properties: {}
+    range: 10.244.9.4/30
+    reserved:
+    - 10.244.9.5
+  - cloud_properties: {}
+    range: 10.244.9.8/30
+    reserved:
+    - 10.244.9.9
+  - cloud_properties: {}
+    range: 10.244.9.12/30
+    reserved:
+    - 10.244.9.13
+  - cloud_properties: {}
+    range: 10.244.9.16/30
+    reserved:
+    - 10.244.9.17
+  - cloud_properties: {}
+    range: 10.244.9.20/30
+    reserved:
+    - 10.244.9.21
+releases:
+- name: concourse
+  version: 0.48.0
+- name: garden-linux
+  version: 0.204.0
+resource_pools:
+- cloud_properties: {}
+  name: concourse
+  network: concourse
+  stemcell:
+    name: bosh-warden-boshlite-ubuntu-trusty-go_agent
+    version: "2776"
+update:
+  canaries: 1
+  canary_watch_time: 1000-60000
+  max_in_flight: 3
+  serial: false
+  update_watch_time: 1000-60000
+
