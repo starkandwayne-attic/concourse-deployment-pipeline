@@ -1,0 +1,198 @@
+---
+jobs:
+- name: deploy-try-anything
+  public: true
+  serial: true
+  plan:
+  - aggregate:
+    - {get: stemcell, trigger: true}
+    - {get: release-docker, trigger: true}
+    - {get: release-logstash-docker, trigger: true}
+    - {get: pipeline, resource: git-pipeline, trigger: false}
+    - {get: try-anything-pipeline-changes, trigger: true}
+    - {get: try-anything-env-changes, trigger: true}
+    - {get: release-version, trigger: false, params: {bump: patch}}
+  - task: make-manifest
+    config:
+      platform: linux
+      image: {{docker-hub-task-image}}
+      inputs:
+      - {name: pipeline, path: .}
+      - {name: stemcell, path: try-anything/stemcell}
+      - {name: release-docker, path: try-anything/releases/docker}
+      - {name: release-logstash-docker, path: try-anything/releases/logstash-docker}
+      run: {path: ./try-anything/bin/create_stub_make_manifest_and_save.sh}
+  - task: git-add
+    config:
+      platform: linux
+      image: {{docker-hub-task-image}}
+      inputs:
+      - {name: make-manifest}
+      run:
+        path: ./make-manifest/try-anything/bin/git-add-stage-changes.sh
+        args: ["[try-anything] Update manifest"]
+  - put: git-pipeline
+    params:
+      repository: git-add/make-manifest
+      rebase: true
+
+  - put: deployment-try-anything
+    params:
+      manifest: make-manifest/try-anything/manifests/manifest.yml
+      releases: [release-*/*.tgz]
+      stemcells: [stemcell/*.tgz]
+
+  - put: release-version
+    params: {file: release-version/number}
+
+  - task: save-deployment-pipeline
+    config:
+      platform: linux
+      image: {{docker-hub-task-image}}
+      inputs:
+      - {name: release-version}
+      - {name: make-manifest, path: .}
+      - {name: release-docker}
+      - {name: release-logstash-docker}
+      - {name: stemcell}
+      run: {path: ./try-anything/bin/save_deployment_pipeline.sh}
+
+  - put: s3-candidate-assets
+    params: {from: save-deployment-pipeline/pipeline-assets-(.*).tgz}
+
+- name: deploy-production
+  public: true
+  serial: true
+  serial_groups: [production]
+  plan:
+  - aggregate:
+    - get: candidate-assets
+      resource: s3-candidate-assets
+      passed: [deploy-try-anything]
+      trigger: true
+    - {get: pipeline, resource: git-pipeline, trigger: false}
+
+    # disabled during initial development
+    - {get: production-env-changes, trigger: false}
+    # - {get: production-env-changes, trigger: true}
+    - {get: release-version, passed: [deploy-try-anything], trigger: false}
+  - task: unpack-assets
+    config:
+      platform: linux
+      image: {{docker-hub-task-image}}
+      inputs:
+      - {name: pipeline, path: .}
+      - {name: candidate-assets}
+      run:
+        path: ./production/bin/unpack_assets.sh
+        args: ["candidate-assets/pipeline-assets-*.tgz", "production"]
+  - task: make-manifest
+    config:
+      platform: linux
+      image: {{docker-hub-task-image}}
+      inputs:
+      - {name: unpack-assets, path: .}
+      run: {path: ./production/bin/create_stub_make_manifest_and_save.sh}
+  - task: git-add
+    config:
+      platform: linux
+      image: {{docker-hub-task-image}}
+      inputs:
+      - name: make-manifest
+      run:
+        path: ./make-manifest/production/bin/git-add-stage-changes.sh
+        args: ["[production] Update manifest"]
+  - put: git-pipeline
+    params:
+      repository: git-add/make-manifest
+      rebase: true
+
+  - put: deployment-production
+    params:
+      manifest: make-manifest/production/manifests/manifest.yml
+      releases: []
+      stemcells: []
+
+resources:
+- name: stemcell
+  type: bosh-io-stemcell
+  source:
+    name: {{bosh-stemcell-name}}
+    version: {{bosh-stemcell-version}}
+
+- name: release-docker
+  type: bosh-io-release
+  source: {repository: cf-platform-eng/docker-boshrelease}
+
+- name: release-logstash-docker
+  type: bosh-io-release
+  source: {repository: cloudfoundry-community/logstash-docker-boshrelease}
+
+- name: git-pipeline
+  type: git
+  source:
+    uri: {{pipeline-git-repo}}
+    branch: {{pipeline-branch}}
+    private_key: {{github-private-key}}
+
+- name: try-anything-env-changes
+  type: git
+  source:
+    uri: {{pipeline-git-repo}}
+    branch: {{pipeline-branch}}
+    private_key: {{github-private-key}}
+    paths: [try-anything/environment]
+
+- name: try-anything-pipeline-changes
+  type: git
+  source:
+    uri: {{pipeline-git-repo}}
+    branch: {{pipeline-branch}}
+    private_key: {{github-private-key}}
+    paths: [try-anything/pipeline]
+
+- name: production-env-changes
+  type: git
+  source:
+    uri: {{pipeline-git-repo}}
+    branch: {{pipeline-branch}}
+    private_key: {{github-private-key}}
+    paths: [production/environment]
+
+- name: deployment-try-anything
+  type: bosh-deployment
+  source:
+    target: {{bosh-target}}
+    username: {{bosh-username}}
+    password: {{bosh-password}}
+    deployment: logstash-docker-try-anything
+    ignore_ssl: true
+
+- name: deployment-production
+  type: bosh-deployment
+  source:
+    target: {{bosh-target}}
+    username: {{bosh-username}}
+    password: {{bosh-password}}
+    deployment: logstash-docker-production
+    ignore_ssl: true
+
+- name: release-version
+  type: semver
+  source:
+    bucket: {{aws-pipeline-bucket}}
+    key: release-version
+    initial_version: 0.1.0
+    access_key_id: {{aws-access-key-id}}
+    secret_access_key: {{aws-secret-access-key}}
+    region_name: us-east-1
+
+- name: s3-candidate-assets
+  type: s3
+  source:
+    access_key_id: {{aws-access-key-id}}
+    secret_access_key: {{aws-secret-access-key}}
+    region_name: {{aws-region-name}}
+    bucket:  {{aws-pipeline-bucket}}
+    private: true
+    regexp: pipeline-assets-(.*).tgz
